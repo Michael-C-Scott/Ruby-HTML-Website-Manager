@@ -50,6 +50,7 @@ if role == "editor"
 
   loop do
     puts "\n-- DSL Editor Menu --"
+    puts "0. View Input Examples"
     puts "1. List templates/functions"
     puts "2. Add new template"
     puts "3. Add new function"
@@ -61,6 +62,21 @@ if role == "editor"
     choice = gets.chomp.strip
 
     case choice
+    when "0"
+      file = "editor_input_examples.json"
+      if File.exist?(file)
+        examples = JSON.parse(File.read(file))
+        puts "\n--- Editor Input Examples ---\n\n"
+        examples.each do |entry|
+          entry.each do |key, value|
+            puts "#{key}:"
+            puts value.strip.gsub(/^/, '  ')
+            puts "-" * 40
+          end
+        end
+      else
+        puts "No example input file found."
+      end
     when "1"
       templates, functions = list_templates_and_functions(file)
       puts "\nTemplates:"
