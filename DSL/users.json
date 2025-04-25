@@ -8,6 +8,7 @@
     {
       "name": "Bob",
       "email": "bob@example.com",
+      "role": "user",
       "submitted_at": "2025-04-09T10:05:00Z"
     },
     {
