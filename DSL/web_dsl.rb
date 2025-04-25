@@ -15,7 +15,9 @@ end
 module WebFramework
   class App
     attr_accessor :routes, :templates, :layout, :session_store
-
+    def start(port: 4567)
+      WebFramework.start(port: port)
+    end
     def initialize
       @routes = {}
       @templates = {}
@@ -23,6 +25,24 @@ module WebFramework
       @session_store = {}  # Simple session storage hash keyed by session_id.
       @user_data = load_user_data
       setup_mail
+    end
+
+    #Normalize input for json 
+    def normalize_submission_data(req)
+      {
+        name: req.query["name"].to_s.strip,
+        email: req.query["email"].to_s.strip,
+        about: req.query["about"].to_s.strip,
+        project: req.query["project"].to_s.strip,
+        description: req.query["description"].to_s.strip,
+        priority: req.query["priority"] || "Low",
+        page_title: req.query["page_title"].to_s.strip,
+        background_color: req.query["background_color"] || "#ffffff",
+        include_email: req.query["include_email"] == "on",
+        include_image: req.query["include_image"] == "on",
+        layout_style: req.query["layout_style"] || "basic",
+        submitted_at: Time.now.utc.iso8601
+      }
     end
 
     # Returns the session hash for the request.
@@ -34,9 +54,11 @@ module WebFramework
       @session_store[session_id] ||= {}
     end
 
-    def load_users(file = "users.json")
-      return [] unless File.exist?(file)
-      puts JSON.parse(File.read(file))
+    def load_users
+      JSON.parse(File.read("users.json"))
+    rescue => e
+      puts "Error loading users.json: #{e.message}"
+      []
     end
 
     def save_users(users, file = "users.json")
@@ -88,6 +110,27 @@ module WebFramework
 
     def layout(&block)
       @layout = block
+      layout do
+        <<~HTML
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>DSL App</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+              h2 { color: #333; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { padding: 8px 12px; border: 1px solid #ccc; }
+              th { background: #eee; }
+            </style>
+          </head>
+          <body>
+            #{capture}
+          </body>
+          </html>
+        HTML
+      end
     end
 
     def render(name, context = {})
@@ -147,9 +190,11 @@ module WebFramework
   end
 
   # Helper functions for managing users and changelog.
-  def load_users(file = "users.json")
-    return [] unless File.exist?(file)
-    JSON.parse(File.read(file))
+  def load_users
+    JSON.parse(File.read("users.json"))
+  rescue => e
+    puts "Error loading users.json: #{e.message}"
+    []
   end
 
   def save_users(users, file = "users.json")
