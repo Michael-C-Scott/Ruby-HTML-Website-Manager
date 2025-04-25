@@ -14,7 +14,7 @@ $app = WebFramework.app do
       res.status = 405
       "Method Not Allowed"
     end
-  end  # ✅ closes the app block properly and returns the application
+  end  # closes the app block properly and returns the application
 
 # Ask for user role.
 puts "Enter your role (admin/user/editor):"
@@ -28,12 +28,17 @@ if role == "editor"
   puts "Opening #{file} for editing..."
 
 
-  def list_templates_and_functions(file)
-    content = File.read(file)
-    templates = content.scan(/define_template\s+:([a-zA-Z0-9_]+)/).flatten
-    functions = content.scan(/def\s+([a-zA-Z0-9_]+)/).flatten.uniq - ["list_templates_and_functions"]
-    return templates, functions
-  end
+@templates = []
+@functions = []
+
+def initialize_lists(file)
+  content = File.read(file)
+  @templates = content.scan(/define_template\s+:([a-zA-Z0-9_]+)/).flatten
+  @functions = content.scan(/def\s+([a-zA-Z0-9_]+)/).flatten.uniq
+end
+
+# Initialize the lists when entering editor mode
+initialize_lists(file)
 
   def modify_file(file)
     content = File.read(file)
@@ -52,7 +57,7 @@ if role == "editor"
     puts "5. Modify template/function"
     puts "6. List all users from users.json"
     puts "7. View JSON-based changelog"
-    puts "8. Switch to page mode"
+    puts "8. Restart Application"
     puts "9. Exit Program"
 
     print "Choose an option: "
@@ -75,19 +80,24 @@ if role == "editor"
         puts "No example input file found."
       end
     when "1"
-      templates, functions = list_templates_and_functions(file)
       puts "\nTemplates:"
-      puts templates.empty? ? "  (none found)" : templates.map { |t| "  - #{t}" }
+      puts @templates.empty? ? "  (none found)" : @templates.map { |t| "  - #{t}" }
       puts "\nFunctions:"
-      puts functions.empty? ? "  (none found)" : functions.map { |f| "  - #{f}" }
+      puts @functions.empty? ? "  (none found)" : @functions.map { |f| "  - #{f}" }
     when "2"
       print "Enter new template name: "
       name = gets.chomp.strip.to_sym
-      puts "Enter template HTML (end with EOF or Ctrl+D):"
-      html = STDIN.read
-      modify_file(file) do |content|
-        content + "\n\ndefine_template :#{name} do\n  <<~HTML\n#{html.lines.map { |l| "    #{l}" }.join}  HTML\nend\n"
-      log_change("Michael", "Added Template", { name: name, fields: content })
+      if @templates.include?(name.to_s)
+        puts "Template '#{name}' already exists."
+      else
+        puts "Enter template HTML (end with EOF or Ctrl+D):"
+        html = STDIN.read
+        modify_file(file) do |content|
+          content + "\n\ndefine_template :#{name} do\n  <<~HTML\n#{html.lines.map { |l| "    #{l}" }.join}  HTML\nend\n"
+        end
+        @templates << name.to_s
+        log_change("Michael", "Added Template", { name: name })
+        puts "Template '#{name}' added successfully."
       end
     when "3"
       print "Enter new function name: "
@@ -101,20 +111,44 @@ if role == "editor"
     when "4"
       print "Name of template or function to remove: "
       name = gets.chomp.strip
-      modify_file(file) do |content|
-        content.gsub(/^\s*define_template\s+:#{name}\s+do.*?^end\n/m, '').
-                gsub(/^\s*def\s+#{name}.*?^end\n/m, '')
-      log_change("Michael", "Removed Function", { name: name })
+      if @templates.include?(name)
+        modify_file(file) do |content|
+          content.gsub(/^\s*define_template\s+:#{name}\s+do.*?^end\n/m, '')
+        end
+        @templates.delete(name)
+        log_change("Michael", "Removed Template", { name: name })
+        puts "Template '#{name}' removed successfully."
+      elsif @functions.include?(name)
+        modify_file(file) do |content|
+          content.gsub(/^\s*def\s+#{name}.*?^end\n/m, '')
+        end
+        @functions.delete(name)
+        log_change("Michael", "Removed Function", { name: name })
+        puts "Function '#{name}' removed successfully."
+      else
+        puts "No template or function found with the name '#{name}'."
       end
     when "5"
       print "Name of template/function to modify: "
       name = gets.chomp.strip
-      puts "Enter the new code (end with EOF or Ctrl+D):"
-      new_code = STDIN.read
-      modify_file(file) do |content|
-        content.gsub(/^\s*define_template\s+:#{name}\s+do.*?^end\n/m, "define_template :#{name} do\n  <<~HTML\n#{new_code.lines.map { |l| "    #{l}" }.join}  HTML\nend\n").
-                gsub(/^\s*def\s+#{name}.*?^end\n/m, "def #{name}\n#{new_code.lines.map { |l| "  #{l}" }.join}end\n")
-      log_change("Michael", "Edited Template/Function", { name: name, changes: content })
+      if @templates.include?(name)
+        puts "Enter the new HTML code (end with EOF or Ctrl+D):"
+        new_code = STDIN.read
+        modify_file(file) do |content|
+          content.gsub(/^\s*define_template\s+:#{name}\s+do.*?^end\n/m, "define_template :#{name} do\n  <<~HTML\n#{new_code.lines.map { |l| "    #{l}" }.join}  HTML\nend\n")
+        end
+        log_change("Michael", "Modified Template", { name: name })
+        puts "Template '#{name}' modified successfully."
+      elsif @functions.include?(name)
+        puts "Enter the new Ruby code (end with EOF or Ctrl+D):"
+        new_code = STDIN.read
+        modify_file(file) do |content|
+          content.gsub(/^\s*def\s+#{name}.*?^end\n/m, "def #{name}\n#{new_code.lines.map { |l| "  #{l}" }.join}end\n")
+        end
+        log_change("Michael", "Modified Function", { name: name })
+        puts "Function '#{name}' modified successfully."
+      else
+        puts "No template or function found with the name '#{name}'."
       end
     when "6"
       file = "users.json"
@@ -144,26 +178,30 @@ if role == "editor"
           puts "\n--- Changelog Entries ---"
           changelog.each_with_index do |entry, i|
             puts "\nEntry ##{i + 1}:"
-            puts "  Editor: #{entry["editor"]}"
+            puts "  Editor: #{entry["editor"] || entry["by"] || "N/A"}"
             puts "  Action: #{entry["action"]}"
             puts "  Timestamp: #{entry["timestamp"]}"
-            puts "  Details: #{entry["details"].to_json}"
+            details = entry["details"] || entry["detail"]
+            if details
+              puts "  Details:"
+              if details.is_a?(Hash) || details.is_a?(Array)
+                details.each do |k, v|
+                  puts "    #{k}: #{v}"
+                end
+              else
+                puts "    #{details}"
+              end
+            else
+              puts "  Details: (none provided)"
+            end
           end
         end
       else
         puts "changelog.json does not exist."
       end
     when "8"
-      puts "Switching to page mode..."
-      puts "Enter the new role (admin/user):"
-      role = gets.chomp.strip.downcase
-      if %w[admin user].include?(role)
-        $current_role = role
-        puts "Role switched to #{role}. Launching the webpage..."
-        $app.start(port: 4567) # Start the web application on port 4567
-      else
-        puts "Invalid role. Please enter 'admin' or 'user'."
-      end
+      puts "Restarting the application..."
+      exec("ruby", "test_web_dsl.rb")
     when "9"
       puts "Exiting editor mode."
       exit
@@ -322,13 +360,13 @@ end
         </script>
       </head>
       <body onload="liveUpdateUserDesign()">
-        <h2>Choose a Template Variant</h2>
+        <h2>Local Host Testing</h2>
         <div>
           <button class="tab-btn" onclick="switchTab('v1')">Page 1</button>
           <button class="tab-btn" onclick="switchTab('v2')">Page 2</button>
           <button class="tab-btn" onclick="switchTab('v3')">Webpage Display</button>
           <button class="tab-btn" onclick="switchTab('v4')">User Design</button>
-          <button class="tab-btn" onclick="switchTab('v5')">View Users</button>
+          #{'<button class="tab-btn" onclick="switchTab(\'v5\')">View Users</button>' if role == 'admin'}
         </div>
 
         <form action="/submit" method="post" enctype="multipart/form-data">
@@ -338,7 +376,13 @@ end
             <input type="email" name="email" placeholder="Email"><br><br>
             <textarea name="about" placeholder="About you..."></textarea>
           </div>
-
+          <div id="v5" class="tab">
+            <h3>Admin - User Management Panel</h3>
+            <div id="userList">
+              <p>Loading users...</p>
+            </div>
+            <button type="button" onclick="location.href='/add_user'">Add User</button>
+          </div>
           <div id="v2" class="tab">
             <h3>Template Variant 2</h3>
             <input type="text" name="project" placeholder="Project Title"><br><br>
@@ -366,17 +410,51 @@ end
             <div class="carousel" id="carousel"></div>
           </div>
 
-          #{'<div id="v5" class="tab-content" style="display: none;">
-  <h2>Admin &ndash; User Management Panel</h2>
-  <div id="userList">Loading users...</div>
-</div>' if role == 'admin'}
-
           <br><br>
           <button type="submit">Submit</button>
           <button type="button" onclick="saveScreenshot()">Save Screenshot</button>
           #{'<button type="button" onclick="openEditor()">Edit DSL</button>' if role == 'admin'}
         </form>
+        <script>
+          document.addEventListener("DOMContentLoaded", () => {
+            const editorModal = document.getElementById('editorModal');
+            const editorTextarea = document.getElementById('editorTextarea');
 
+            document.querySelectorAll('button[onclick="openEditor()"]').forEach(button => {
+              button.addEventListener('click', () => {
+                fetch('/load_test_dsl')
+                  .then(response => response.text())
+                  .then(content => {
+                    editorTextarea.value = content;
+                    editorModal.style.display = 'block';
+                  })
+                  .catch(error => console.error('Error loading DSL:', error));
+              });
+            });
+
+            document.querySelectorAll('button[onclick="saveEditor()"]').forEach(button => {
+              button.addEventListener('click', () => {
+                const updatedContent = editorTextarea.value;
+                fetch('/save_test_dsl', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ updated: updatedContent })
+                })
+                  .then(() => {
+                    editorModal.style.display = 'none';
+                    location.reload();
+                  })
+                  .catch(error => console.error('Error saving DSL:', error));
+              });
+            });
+
+            document.querySelectorAll('button[onclick="document.getElementById(\'editorModal\').style.display=\'none\'"]').forEach(button => {
+              button.addEventListener('click', () => {
+                editorModal.style.display = 'none';
+              });
+            });
+          });
+        </script>
         <div id="editorModal" class="modal" style="display:none;">
           <h3>Edit test_web_dsl.rb</h3>
           <textarea id="editorTextarea"></textarea><br>
@@ -395,7 +473,6 @@ end
     render(:form_variant)
   end
 
-
   route "/user_display.json" do |req, res, sess|
     File.exist?("user_display.json") ? File.read("user_display.json") : "{}"
   end
@@ -411,7 +488,6 @@ end
     "Saved and Reloaded"
   end
 
-  # Admin routes for managing users.
   route "/delete_user" do |req, res, sess|
     if sess["role"] != "admin"
       res.status = 403
@@ -423,59 +499,122 @@ end
       users.delete_at(index)
       save_users(users)
       log_change(sess["role"], "Delete", "Removed user #{user['name']} (#{user['email']})")
-      "<h3>User deleted successfully!</h3><a href='/view_users'>Go Back</a>"
+      "<h3>User deleted successfully!</h3><a href='/'>Go Back</a>"
     else
-      "<h3>User not found!</h3><a href='/view_users'>Go Back</a>"
+      "<h3>User not found!</h3><a href='/'>Go Back</a>"
     end
   end
+  route "/add_user" do |req, res, sess|
+    if sess["role"] != "admin"
+      res.status = 403
+      next "Unauthorized"
+    end
 
+    <<~HTML
+      <h3>Add New User</h3>
+      <form action="/create_user" method="post">
+        <label>Name:</label><br>
+        <input type="text" name="name" required><br>
+        <label>Email:</label><br>
+        <input type="email" name="email" required><br>
+        <label>Role:</label><br>
+        <select name="role" required>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+          <option value="editor">Editor</option>
+        </select><br><br>
+        <button type="submit">Add User</button>
+      </form>
+      <a href="/">Cancel</a>
+    HTML
+  end
+
+  route "/create_user" do |req, res, sess|
+    if sess["role"] != "admin"
+      res.status = 403
+      next "Unauthorized"
+    end
+
+    users = load_users
+    new_user = {
+      "name" => req.query["name"],
+      "email" => req.query["email"],
+      "role" => req.query["role"],
+      "submitted_at" => Time.now.to_s
+    }
+    users << new_user
+    save_users(users)
+    log_change(sess["role"], "Add", "Added user #{new_user['name']} (#{new_user['email']}, #{new_user['role']})")
+    "<h3>User added successfully!</h3><a href='/'>Go Back</a>"
+  end
+
+  route "/add_user_page" do |req, res, sess|
+    if sess["role"] != "admin"
+      res.status = 403
+      next "Unauthorized"
+    end
+
+    <<~HTML
+      <h3>Add New User</h3>
+      <form action="/create_user" method="post">
+        <label>Name:</label><br>
+        <input type="text" name="name" required><br>
+        <label>Email:</label><br>
+        <input type="email" name="email" required><br>
+        <label>Role:</label><br>
+        <select name="role" required>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+          <option value="editor">Editor</option>
+        </select><br><br>
+        <button type="submit">Add User</button>
+      </form>
+      <a href="/view_users">Back to User List</a>
+    HTML
+  end
   route "/view_users" do |req, res, sess|
     unless sess["role"] == "admin"
       res.status = 403
       return "<p>Access denied.</p>"
     end
-  
+
     users = load_users
-  
-    html_content = "<div style='font-family: Arial, sans-serif; padding: 10px;'>"
-    html_content += "<h2>Admin - User Management Panel</h2>"
-  
+
     if users.empty?
-      html_content += "<p>No users found.</p>"
+      "<p>No users found.</p>"
     else
-      html_content += <<~HTML
-        <table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse; width: 100%;'>
-          <thead style='background-color: #f2f2f2;'>
+      rows = users.each_with_index.map do |user, index|
+        <<~ROW
+          <tr>
+            <td>#{CGI.escapeHTML(user["name"].to_s)}</td>
+            <td>#{CGI.escapeHTML(user["email"].to_s)}</td>
+            <td>#{CGI.escapeHTML((user["role"] || "user").to_s)}</td>
+            <td>#{CGI.escapeHTML(user["submitted_at"].to_s)}</td>
+            <td>
+              <a href="/edit_user?index=#{index}">Edit</a> |
+              <a href="/delete_user?index=#{index}" onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
+            </td>
+          </tr>
+        ROW
+      end.join
+
+      <<~HTML
+        <h3>Registered_Users_Table</h3>
+        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+          <thead style="background-color: #f2f2f2;">
             <tr>
               <th>Username</th>
               <th>Email</th>
               <th>Role</th>
               <th>Submitted At</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
+            #{rows}
+          </tbody>
+        </table>
       HTML
-  
-      users.each do |user|
-        name = CGI.escapeHTML(user["name"].to_s)
-        email = CGI.escapeHTML(user["email"].to_s)
-        submitted = CGI.escapeHTML(user["submitted_at"].to_s)
-        role = CGI.escapeHTML((user["role"] || "user").to_s)
-        html_content += "<tr><td>#{name}</td><td>#{email}</td><td>#{role}</td><td>#{submitted}</td></tr>"
-      end
-  
-      html_content += "</tbody></table>"
-    end
-  
-    html_content += "</div>"
-  
-    # Apply layout rendering if it's set
-    if @layout
-      renderer = Object.new
-      renderer.define_singleton_method(:capture) { html_content }
-      renderer.instance_eval(&@layout)
-    else
-      html_content
     end
   end
 
@@ -489,18 +628,24 @@ end
     if user = users[index]
       sess["edit_index"] = index
       <<~HTML
-      <h2>Edit User</h2>
-      <form action="/update_user" method="post">
-        <label>Name:</label><br>
-        <input type="text" name="name" value="#{user["name"]}" required><br>
-        <label>Email:</label><br>
-        <input type="email" name="email" value="#{user["email"]}" required><br><br>
-        <button type="submit">Update</button>
-      </form>
-      <a href="/view_users">Cancel</a>
+        <h3>Edit User</h3>
+        <form action="/update_user" method="post">
+          <label>Name:</label><br>
+          <input type="text" name="name" value="#{CGI.escapeHTML(user["name"].to_s)}" required><br>
+          <label>Email:</label><br>
+          <input type="email" name="email" value="#{CGI.escapeHTML(user["email"].to_s)}" required><br>
+          <label>Role:</label><br>
+          <select name="role" required>
+            <option value="user" #{'selected' if user["role"] == "user"}>User</option>
+            <option value="admin" #{'selected' if user["role"] == "admin"}>Admin</option>
+            <option value="editor" #{'selected' if user["role"] == "editor"}>Editor</option>
+          </select><br><br>
+          <button type="submit">Update</button>
+        </form>
+        <a href="/">Cancel</a>
       HTML
     else
-      "<h3>User not found!</h3><a href='/view_users'>Go Back</a>"
+      "<h3>User not found!</h3><a href='/'>Go Back</a>"
     end
   end
 
@@ -515,11 +660,12 @@ end
       before = user.dup
       user["name"] = req.query["name"]
       user["email"] = req.query["email"]
+      user["role"] = req.query["role"]
       save_users(users)
-      log_change(sess["role"], "Edit", "Updated user #{before['name']} (#{before['email']}) → #{user['name']} (#{user['email']})")
-      "<h3>User updated successfully!</h3><a href='/view_users'>Go Back</a>"
+      log_change(sess["role"], "Edit", "Updated user #{before['name']} (#{before['email']}, #{before['role']}) → #{user['name']} (#{user['email']}, #{user['role']})")
+      "<h3>User updated successfully!</h3><a href='/'>Go Back</a>"
     else
-      "<h3>User not found!</h3><a href='/view_users'>Go Back</a>"
+      "<h3>User not found!</h3><a href='/'>Go Back</a>"
     end
   end
 
@@ -556,4 +702,11 @@ if $current_role == "admin" || $current_role == "user"
 end
 
 def my_template
+end
+
+
+define_template :contact_page do
+  <<~HTML
+    \n<form>\n  <label>Name:</label><input type=\"text\" name=\"name\"><br>\n  <label>Email:</label><input type=\"email\" name=\"email\"><br>\n  <input type=\"submit\" value=\"Send\">\n</form>\n
+  HTML
 end
