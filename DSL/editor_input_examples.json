@@ -1,0 +1,18 @@
+[
+    {
+      "Command": "add template",
+      "Example": "Enter template name: Contact Page\n\nEnter HTML content:\n<form>\n  <label>Name:</label><input type=\"text\" name=\"name\"><br>\n  <label>Email:</label><input type=\"email\" name=\"email\"><br>\n  <input type=\"submit\" value=\"Send\">\n</form>\n\nTemplate 'Contact Page' saved."
+    },
+    {
+      "Command": "edit template",
+      "Example": "Available templates: [Page 1, Page 2, Contact Page]\nEnter template to edit: Contact Page\n\nCurrent HTML:\n<form>...</form>\n\nEnter new HTML:\n<form>\n  <label>Name:</label><input type=\"text\" name=\"name\"><br>\n  <label>Message:</label><textarea name=\"message\"></textarea><br>\n  <input type=\"submit\" value=\"Send\">\n</form>\n\nTemplate updated."
+    },
+    {
+      "Command": "remove template",
+      "Example": "Enter template name to remove: Page 2\nTemplate 'Page 2' removed."
+    },
+    {
+      "Command": "list templates",
+      "Example": "Templates available:\n- Page 1\n- Contact Page"
+    }
+  ]
