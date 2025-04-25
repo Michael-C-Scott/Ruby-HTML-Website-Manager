@@ -1,31 +1,25 @@
 # test_web_dsl.rb
+require 'cgi'
 require_relative 'web_dsl'
 include WebFramework
+
+# Build the application and define routes.
+$app = WebFramework.app do
+  route "/login" do |req, res, sess|
+    if req.method == "POST"
+      role = req.query["role"] || "user"
+      sess["role"] = role
+      res.redirect("/")
+    else
+      res.status = 405
+      "Method Not Allowed"
+    end
+  end  # ✅ closes the app block properly and returns the application
 
 # Ask for user role.
 puts "Enter your role (admin/user/editor):"
 role = gets.chomp.strip.downcase
-
-# Define a template for viewing users (accessible only to admin).
-define_method :view_users do
-  app.route('/view_users') do |req, res, sess|
-    users = load_users
-    html = "<h2>Admin - User Management Panel</h2>"
-    if users.empty?
-      html += "<p>No users found.</p>"
-    else
-      html += <<~HTML
-        <table border='1' cellpadding='5'>
-          <tr><th>Username</th><th>Email</th><th>Submitted At</th></tr>
-      HTML
-      users.each do |user|
-        html += "<tr><td>#{user['name'].html_escape}</td><td>#{user['email'].html_escape}</td><td>#{user['submitted_at'].html_escape}</td></tr>"
-      end
-      html += "</table>"
-    end
-    html
-  end
-end
+$current_role = role
 
 # If the role is editor, allow modifications to this file.
 if role == "editor"
@@ -43,8 +37,8 @@ if role == "editor"
 
   def modify_file(file)
     content = File.read(file)
-    updated = yield(content)
-    File.write(file, updated)
+    updated_content = yield(content)
+    File.write(file, updated_content)
     puts "Changes saved to #{file}."
   end
 
@@ -56,7 +50,10 @@ if role == "editor"
     puts "3. Add new function"
     puts "4. Remove template/function"
     puts "5. Modify template/function"
-    puts "6. Exit"
+    puts "6. List all users from users.json"
+    puts "7. View JSON-based changelog"
+    puts "8. Switch to page mode"
+    puts "9. Exit Program"
 
     print "Choose an option: "
     choice = gets.chomp.strip
@@ -90,6 +87,7 @@ if role == "editor"
       html = STDIN.read
       modify_file(file) do |content|
         content + "\n\ndefine_template :#{name} do\n  <<~HTML\n#{html.lines.map { |l| "    #{l}" }.join}  HTML\nend\n"
+      log_change("Michael", "Added Template", { name: name, fields: content })
       end
     when "3"
       print "Enter new function name: "
@@ -98,6 +96,7 @@ if role == "editor"
       code = STDIN.read
       modify_file(file) do |content|
         content + "\n\ndef #{fname}\n#{code.lines.map { |l| "  #{l}" }.join}end\n"
+      log_change("Michael", "Added Function", { name: fname, fields: content })
       end
     when "4"
       print "Name of template or function to remove: "
@@ -105,6 +104,7 @@ if role == "editor"
       modify_file(file) do |content|
         content.gsub(/^\s*define_template\s+:#{name}\s+do.*?^end\n/m, '').
                 gsub(/^\s*def\s+#{name}.*?^end\n/m, '')
+      log_change("Michael", "Removed Function", { name: name })
       end
     when "5"
       print "Name of template/function to modify: "
@@ -114,8 +114,57 @@ if role == "editor"
       modify_file(file) do |content|
         content.gsub(/^\s*define_template\s+:#{name}\s+do.*?^end\n/m, "define_template :#{name} do\n  <<~HTML\n#{new_code.lines.map { |l| "    #{l}" }.join}  HTML\nend\n").
                 gsub(/^\s*def\s+#{name}.*?^end\n/m, "def #{name}\n#{new_code.lines.map { |l| "  #{l}" }.join}end\n")
+      log_change("Michael", "Edited Template/Function", { name: name, changes: content })
       end
     when "6"
+      file = "users.json"
+      if File.exist?(file)
+        users = JSON.parse(File.read(file))
+        if users.empty?
+          puts "\nNo users found."
+        else
+          puts "\n--- Users ---"
+          users.each_with_index do |user, index|
+            puts "\nUser ##{index + 1}:"
+            puts "  Name: #{user['name']}"
+            puts "  Email: #{user['email']}"
+            puts "  Role: #{user['role'] || 'user'}"
+            puts "  Submitted At: #{user['submitted_at']}"
+          end
+        end
+      else
+        puts "users.json not found."
+      end
+    when "7"
+      if File.exist?("changelog.json")
+        changelog = JSON.parse(File.read("changelog.json"))
+        if changelog.empty?
+          puts "No changes logged yet."
+        else
+          puts "\n--- Changelog Entries ---"
+          changelog.each_with_index do |entry, i|
+            puts "\nEntry ##{i + 1}:"
+            puts "  Editor: #{entry["editor"]}"
+            puts "  Action: #{entry["action"]}"
+            puts "  Timestamp: #{entry["timestamp"]}"
+            puts "  Details: #{entry["details"].to_json}"
+          end
+        end
+      else
+        puts "changelog.json does not exist."
+      end
+    when "8"
+      puts "Switching to page mode..."
+      puts "Enter the new role (admin/user):"
+      role = gets.chomp.strip.downcase
+      if %w[admin user].include?(role)
+        $current_role = role
+        puts "Role switched to #{role}. Launching the webpage..."
+        $app.start(port: 4567) # Start the web application on port 4567
+      else
+        puts "Invalid role. Please enter 'admin' or 'user'."
+      end
+    when "9"
       puts "Exiting editor mode."
       exit
     else
@@ -124,12 +173,45 @@ if role == "editor"
   end
 end
 
-# Build the application and define routes.
-app = WebFramework.app do
+  route "/submit" do |req, res, sess|
+    submitted_data = normalize_submission_data(req)
+  
+    data = if File.exist?("submitted_data.json")
+      begin
+        content = File.read("submitted_data.json")
+        content.strip.empty? ? [] : JSON.parse(content)
+      rescue JSON::ParserError
+        []
+      end
+    else
+      []
+    end
+  
+    data << submitted_data
+    File.write("submitted_data.json", JSON.pretty_generate(data))
+  
+    res.status = 200
+    "<p>Thank you, #{submitted_data[:name]}! Your submission has been saved.</p>"
+  end
+
+  route "/save_data" do |req, res, sess|
+    fields = req.query
+    images = req.query["images[]"] || []
+    data = {
+      heading: fields["heading"] || "",
+      background: fields["background"] || "#ffffff",
+      fields: JSON.parse(fields["fields"] || "[]"),
+      images: images.is_a?(Array) ? images : [images]
+    }
+    File.write("user_display.json", data.to_json)
+    "<h3>Data saved successfully!</h3><a href='/'>Go Back</a>"
+  end
+
   define_template :form_variant do
     <<~HTML
       <html>
       <head>
+        <meta charset="UTF-8">
         <title>Ruby-HTML DSL</title>
         <style>
           .tab { display: none; }
@@ -137,7 +219,7 @@ app = WebFramework.app do
           button.tab-btn { margin-right: 8px; }
           .carousel { display: flex; overflow-x: auto; gap: 10px; }
           .carousel img { max-height: 100px; border: 1px solid #ccc; border-radius: 6px; }
-          .modal { position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: #fff; border: 2px solid #333; overflow: auto; z-index: 1000; padding: 20px; }
+          .modal { position: fixed; background: 10%; left: 10%; width: 80%; height: 80%; background: #fff; border: 2px solid #333; overflow: auto; z-index: 1000; padding: 20px; }
           .modal textarea { width: 100%; height: 80%; }
         </style>
         <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -145,6 +227,22 @@ app = WebFramework.app do
           function switchTab(id) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            if (id === 'v5') {
+              const userListDiv = document.getElementById('userList');
+              if (userListDiv) {
+                fetch('/view_users')
+                  .then(res => res.text())
+                  .then(html => {
+                    userListDiv.innerHTML = html;
+                  })
+                  .catch(err => {
+                    userListDiv.innerHTML = "<p>Error loading users.</p>";
+                    console.error("Failed to load users:", err);
+                  });
+              } else {
+                console.warn("User list container not found.");
+              }
+            }
           }
           function saveScreenshot() {
             html2canvas(document.body).then(canvas => {
@@ -154,26 +252,57 @@ app = WebFramework.app do
               link.click();
             });
           }
-          function previewUserDesign() {
-            fetch('/user_display.json')
-              .then(res => res.json())
-              .then(data => {
-                document.getElementById('user_output').innerHTML = `
-                  <h1 style="background:${data.background}; font-weight: bold;">${data.heading}</h1>
-                  <form>
-                    ${data.fields.map(f => {
-                      if(f.type === 'text') return `<input type='text' placeholder='${f.label}'><br>`;
-                      if(f.type === 'checkbox') return `<label><input type='checkbox'> ${f.label}</label><br>`;
-                      if(f.type === 'dropdown') return `<label>${f.label}<select>${f.options.map(o => `<option>${o}</option>`).join('')}</select></label><br>`;
-                      return '';
-                    }).join('')}
-                  </form>
-                `;
-                if (data.images) {
-                  document.getElementById('carousel').innerHTML = data.images.map(src => `<img src="${src}" alt="carousel">`).join('');
-                }
-              });
+          function liveUpdateUserDesign() {
+            const heading = document.querySelector('[name="heading"]').value;
+            const background = document.querySelector('[name="background"]').value;
+            const fieldsInput = document.querySelector('[name="fields"]').value;
+            const imageInput = document.querySelector('[name="image"]');
+
+            let fields = [];
+            try {
+              fields = JSON.parse(fieldsInput);
+            } catch (e) {
+              // Invalid JSON, skip live render
+            }
+
+            const formElements = fields.map(f => {
+              if (f.type === 'text') return `<input type='text' placeholder='${f.label}'><br>`;
+              if (f.type === 'checkbox') return `<label><input type='checkbox'> ${f.label}</label><br>`;
+              if (f.type === 'dropdown') {
+                return `<label>${f.label}<select>${(f.options || []).map(o => `<option>${o}</option>`).join('')}</select></label><br>`;
+              }
+              return '';
+            }).join('');
+
+            const carousel = document.getElementById('carousel');
+            const images = Array.from(imageInput.files).map(file => {
+              const reader = new FileReader();
+              const img = document.createElement('img');
+              reader.onload = function (e) {
+                img.src = e.target.result;
+                carousel.appendChild(img);
+              };
+              reader.readAsDataURL(file);
+              return img;
+            });
+
+            document.getElementById('user_output').innerHTML = `
+              <h1 style="background:${background}; font-weight: bold;">${heading}</h1>
+              <form>${formElements}</form>
+            `;
           }
+
+          // Set up live event listeners
+          document.addEventListener("DOMContentLoaded", () => {
+            document.querySelector('[name="heading"]').addEventListener('input', liveUpdateUserDesign);
+            document.querySelector('[name="background"]').addEventListener('input', liveUpdateUserDesign);
+            document.querySelector('[name="fields"]').addEventListener('input', liveUpdateUserDesign);
+            document.querySelector('[name="image"]').addEventListener('change', liveUpdateUserDesign);
+
+            // Initial render
+            liveUpdateUserDesign();
+          });
+
           function openEditor() {
             fetch('/load_test_dsl')
               .then(r => r.text())
@@ -192,17 +321,17 @@ app = WebFramework.app do
           }
         </script>
       </head>
-      <body onload="previewUserDesign()">
+      <body onload="liveUpdateUserDesign()">
         <h2>Choose a Template Variant</h2>
         <div>
           <button class="tab-btn" onclick="switchTab('v1')">Page 1</button>
           <button class="tab-btn" onclick="switchTab('v2')">Page 2</button>
           <button class="tab-btn" onclick="switchTab('v3')">Webpage Display</button>
           <button class="tab-btn" onclick="switchTab('v4')">User Design</button>
-          #{'<button class="tab-btn" onclick="switchTab(\'v5\')">View Users</button>' if role == 'admin'}
+          <button class="tab-btn" onclick="switchTab('v5')">View Users</button>
         </div>
 
-        <form action="/save_data" method="post" enctype="multipart/form-data">
+        <form action="/submit" method="post" enctype="multipart/form-data">
           <div id="v1" class="tab active">
             <h3>Template Variant 1</h3>
             <input type="text" name="name" placeholder="Full Name"><br><br>
@@ -227,8 +356,8 @@ app = WebFramework.app do
             <input type="color" name="background" value="#ffffff"><br><br>
             <h4>Add Fields:</h4>
             <textarea name="fields" placeholder='[{"type":"text","label":"Your Name"}, {"type":"checkbox","label":"Subscribe"}]' rows="6" cols="60"></textarea>
-            <h4>Upload Images:</h4>
-            <input type="file" name="images[]" multiple><br><br>
+            <h4>Upload Image:</h4>
+            <input type="file" name="image" accept="image/*" multiple><br><br>
           </div>
 
           <div id="v4" class="tab">
@@ -237,7 +366,10 @@ app = WebFramework.app do
             <div class="carousel" id="carousel"></div>
           </div>
 
-          #{'<div id="v5" class="tab"><h3>Admin - User Management Panel</h3><p>(Feature Placeholder)</p></div>' if role == 'admin'}
+          #{'<div id="v5" class="tab-content" style="display: none;">
+  <h2>Admin &ndash; User Management Panel</h2>
+  <div id="userList">Loading users...</div>
+</div>' if role == 'admin'}
 
           <br><br>
           <button type="submit">Submit</button>
@@ -263,18 +395,6 @@ app = WebFramework.app do
     render(:form_variant)
   end
 
-  route "/save_data" do |req, res, sess|
-    fields = req.query
-    images = req.query["images[]"] || []
-    data = {
-      heading: fields["heading"] || "",
-      background: fields["background"] || "#ffffff",
-      fields: JSON.parse(fields["fields"] || "[]"),
-      images: images.is_a?(Array) ? images : [images]
-    }
-    File.write("user_display.json", data.to_json)
-    "<h3>Data saved successfully!</h3><a href='/'>Go Back</a>"
-  end
 
   route "/user_display.json" do |req, res, sess|
     File.exist?("user_display.json") ? File.read("user_display.json") : "{}"
@@ -310,10 +430,52 @@ app = WebFramework.app do
   end
 
   route "/view_users" do |req, res, sess|
-    if sess["role"] == "admin"
-      render(:view_users)
+    unless sess["role"] == "admin"
+      res.status = 403
+      return "<p>Access denied.</p>"
+    end
+  
+    users = load_users
+  
+    html_content = "<div style='font-family: Arial, sans-serif; padding: 10px;'>"
+    html_content += "<h2>Admin - User Management Panel</h2>"
+  
+    if users.empty?
+      html_content += "<p>No users found.</p>"
     else
-      "<h3>Access Denied</h3><p>You are not authorized to view this page.</p>"
+      html_content += <<~HTML
+        <table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse; width: 100%;'>
+          <thead style='background-color: #f2f2f2;'>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Submitted At</th>
+            </tr>
+          </thead>
+          <tbody>
+      HTML
+  
+      users.each do |user|
+        name = CGI.escapeHTML(user["name"].to_s)
+        email = CGI.escapeHTML(user["email"].to_s)
+        submitted = CGI.escapeHTML(user["submitted_at"].to_s)
+        role = CGI.escapeHTML((user["role"] || "user").to_s)
+        html_content += "<tr><td>#{name}</td><td>#{email}</td><td>#{role}</td><td>#{submitted}</td></tr>"
+      end
+  
+      html_content += "</tbody></table>"
+    end
+  
+    html_content += "</div>"
+  
+    # Apply layout rendering if it's set
+    if @layout
+      renderer = Object.new
+      renderer.define_singleton_method(:capture) { html_content }
+      renderer.instance_eval(&@layout)
+    else
+      html_content
     end
   end
 
@@ -389,8 +551,8 @@ app = WebFramework.app do
 end
 
 # Start the server only if the role is admin or user.
-if role == "admin" || role == "user"
-  app.start(port: 4567)
+if $current_role == "admin" || $current_role == "user"
+  $app.start(port: 4567)
 end
 
 def my_template
