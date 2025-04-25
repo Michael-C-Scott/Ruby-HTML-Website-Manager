@@ -1,0 +1,50 @@
+[
+  {
+    "editor": "Michael",
+    "action": "Added Template",
+    "details": {
+      "name": "contact_form",
+      "fields": [
+        "name",
+        "email",
+        "message"
+      ]
+    },
+    "timestamp": "2025-04-09T14:12:34Z"
+  },
+  {
+    "editor": "Michael",
+    "action": "Added Template",
+    "detail": {
+      "name": "Contact Page",
+      "Example": "\n<form>\n  <label>Name:</label><input type=\"text\" name=\"name\"><br>\n  <label>Email:</label><input type=\"email\" name=\"email\"><br>\n  <input type=\"submit\" value=\"Send\">\n</form>\n"
+    },
+    "by": "Michael",
+    "timestamp": "2025-04-22 15:58:56"
+  },
+  {
+    "editor": "Michael",
+    "action": "Remove Template",
+    "detail": {
+      "name": "Contact Page"
+    },
+    "by": "Michael",
+    "timestamp": "2025-04-22 17:26:56"
+  },
+  {
+    "action": "Removed Function",
+    "detail": {
+      "name": "Page 2"
+    },
+    "by": "Michael",
+    "timestamp": "2025-04-24 20:11:52"
+  },
+  {
+    "action": "Removed Template/Function",
+    "detail": {
+      "name": "Page 2"
+    },
+    "by": "Editor",
+    "timestamp": "2025-04-25 05:01:08"
+  }
+]
