@@ -257,7 +257,22 @@ end
           button.tab-btn { margin-right: 8px; }
           .carousel { display: flex; overflow-x: auto; gap: 10px; }
           .carousel img { max-height: 100px; border: 1px solid #ccc; border-radius: 6px; }
-          .modal { position: fixed; background: 10%; left: 10%; width: 80%; height: 80%; background: #fff; border: 2px solid #333; overflow: auto; z-index: 1000; padding: 20px; }
+          .modal { 
+            position: fixed; 
+            background: 10%; 
+            left: 50%; 
+            top: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 80%; 
+            height: 80%; 
+            background: #fff; 
+            border: 2px solid #333; 
+            overflow: auto; 
+            z-index: 1000; 
+            padding: 20px; 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
+            border-radius: 8px;
+          }
           .modal textarea { width: 100%; height: 80%; }
         </style>
         <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -293,6 +308,7 @@ end
           function liveUpdateUserDesign() {
             const heading = document.querySelector('[name="heading"]').value;
             const background = document.querySelector('[name="background"]').value;
+            const headerColor = document.querySelector('[name="header_color"]').value;
             const fieldsInput = document.querySelector('[name="fields"]').value;
             const imageInput = document.querySelector('[name="image"]');
 
@@ -325,7 +341,7 @@ end
             });
 
             document.getElementById('user_output').innerHTML = `
-              <h1 style="background:${background}; font-weight: bold;">${heading}</h1>
+              <h1 style="background:${background}; color:${headerColor}; font-weight: bold;">${heading}</h1>
               <form>${formElements}</form>
             `;
           }
@@ -334,6 +350,7 @@ end
           document.addEventListener("DOMContentLoaded", () => {
             document.querySelector('[name="heading"]').addEventListener('input', liveUpdateUserDesign);
             document.querySelector('[name="background"]').addEventListener('input', liveUpdateUserDesign);
+            document.querySelector('[name="header_color"]').addEventListener('input', liveUpdateUserDesign);
             document.querySelector('[name="fields"]').addEventListener('input', liveUpdateUserDesign);
             document.querySelector('[name="image"]').addEventListener('change', liveUpdateUserDesign);
 
@@ -362,10 +379,10 @@ end
       <body onload="liveUpdateUserDesign()">
         <h2>Local Host Testing</h2>
         <div>
-          <button class="tab-btn" onclick="switchTab('v1')">Page 1</button>
-          <button class="tab-btn" onclick="switchTab('v2')">Page 2</button>
-          <button class="tab-btn" onclick="switchTab('v3')">Webpage Display</button>
-          <button class="tab-btn" onclick="switchTab('v4')">User Design</button>
+          <button class="tab-btn" onclick="switchTab('v1')">User Data</button>
+          <button class="tab-btn" onclick="switchTab('v2')">Project Info</button>
+          <button class="tab-btn" onclick="switchTab('v3')">Webpage Builder</button>
+          <button class="tab-btn" onclick="switchTab('v4')">User Webpage</button>
           #{'<button class="tab-btn" onclick="switchTab(\'v5\')">View Users</button>' if role == 'admin'}
         </div>
 
@@ -397,7 +414,10 @@ end
           <div id="v3" class="tab">
             <h3>Webpage Display Builder</h3>
             <input type="text" name="heading" placeholder="Heading Text"><br><br>
+            <h5>header background<h5>
             <input type="color" name="background" value="#ffffff"><br><br>
+            <h5>header text<h5>
+            <input type="color" name="header_color" value="#000000"><br><br>
             <h4>Add Fields:</h4>
             <textarea name="fields" placeholder='[{"type":"text","label":"Your Name"}, {"type":"checkbox","label":"Subscribe"}]' rows="6" cols="60"></textarea>
             <h4>Upload Image:</h4>
@@ -458,7 +478,8 @@ end
         <div id="editorModal" class="modal" style="display:none;">
           <h3>Edit test_web_dsl.rb</h3>
           <textarea id="editorTextarea"></textarea><br>
-          <button onclick="saveEditor()">Save and Reload</button>
+          <h2>Saved changes will be shown on next page start<h2>
+          <button onclick="saveEditor()">Save for reload</button>
           <button onclick="document.getElementById('editorModal').style.display='none'">Close</button>
         </div>
       </body>
