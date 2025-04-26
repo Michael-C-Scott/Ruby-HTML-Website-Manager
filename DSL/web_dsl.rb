@@ -1,4 +1,57 @@
 # web_dsl.rb
+# web_dsl.rb
+#
+# This file defines a lightweight web framework module `WebFramework` that provides
+# a DSL (Domain-Specific Language) for building simple web applications in Ruby.
+# It includes functionality for routing, templating, session management, email sending,
+# and file uploads. The framework is built on top of the WEBrick HTTP server.
+#
+# Classes and Modules:
+# - `String`: Extended with an `html_escape` method for HTML-escaping strings.
+# - `WebFramework::App`: The main application class that handles routes, templates,
+#   sessions, and other web application features.
+#
+# Key Features:
+# - **Routing**: Define routes using the `route` method and associate them with blocks
+#   to handle HTTP requests.
+# - **Templating**: Define templates using the `define_template` method and render them
+#   with the `render` method. Supports layouts for consistent page structure.
+# - **Session Management**: Provides simple session storage using cookies and a hash
+#   (`session_store`) to store session data.
+# - **File Uploads**: Supports file uploads via a `/upload` route.
+# - **Email Sending**: Configures email sending using the `mail` gem and provides
+#   methods to send emails with HTML content.
+# - **User and Changelog Management**: Includes helper methods for loading, saving,
+#   and managing user data and changelogs in JSON files.
+#
+# Methods:
+# - `normalize_submission_data(req)`: Normalizes and extracts form submission data
+#   from an HTTP request.
+# - `session(req, res)`: Retrieves or creates a session for the given request and response.
+# - `load_users` / `save_users(users, file)`: Load and save user data from/to a JSON file.
+# - `load_user_data` / `save_user_data`: Load and save additional user data from/to a JSON file.
+# - `setup_mail`: Configures the email delivery method using SMTP.
+# - `send_email(to_email, html_body)`: Sends an email with the specified recipient and HTML body.
+# - `route(path, &block)`: Defines a route and associates it with a block to handle requests.
+# - `define_template(name, &block)`: Defines a reusable template.
+# - `layout(&block)`: Defines a layout for wrapping rendered templates.
+# - `render(name, context)`: Renders a template with the given context.
+# - `start(port)`: Starts the WEBrick HTTP server on the specified port and mounts routes.
+# - `log_change(session_role, action, detail)`: Logs changes to a changelog file.
+#
+# Usage:
+# - Create an application using `WebFramework.app` and define routes, templates, and layouts.
+# - Start the application by calling `start` with the desired port.
+#
+# Example:
+# ```ruby
+# app = WebFramework.app do
+#   route '/' do |req, res, sess|
+#     "Hello, World!"
+#   end
+# end
+# app.start(port: 8080)
+# ```
 require 'cgi'
 require 'webrick'
 require 'json'
