@@ -1,4 +1,50 @@
 # test_web_dsl.rb
+# This script defines a web application using a custom Ruby-based DSL (Domain-Specific Language) for web development.
+# It includes functionality for user role management, dynamic template and function editing, and user data handling.
+# The application supports multiple routes and provides an interactive interface for administrators and editors.
+
+# Key Features:
+# - Role-based access control: Supports "admin", "user", and "editor" roles with specific permissions.
+# - Dynamic editing: Allows "editor" role to modify templates and functions directly within the script.
+# - User management: Enables "admin" role to add, edit, delete, and view users via a web interface.
+# - JSON-based data handling: Stores user submissions, changelogs, and other data in JSON files.
+# - Live preview: Provides a live preview of user-designed webpages with real-time updates.
+# - Changelog tracking: Logs all changes made to templates, functions, and user data for auditing purposes.
+
+# Routes:
+# - "/" (Home): Displays the main form and user interface based on the current role.
+# - "/login": Handles user login and sets session roles.
+# - "/submit": Processes user submissions and saves them to a JSON file.
+# - "/save_data": Saves user-designed webpage data to a JSON file.
+# - "/load_test_dsl": Loads the current DSL script for editing.
+# - "/save_test_dsl": Saves updates to the DSL script and reloads the application.
+# - "/view_users": Displays a list of registered users (admin-only).
+# - "/add_user": Provides a form for adding new users (admin-only).
+# - "/create_user": Processes the addition of a new user (admin-only).
+# - "/edit_user": Displays a form for editing an existing user (admin-only).
+# - "/update_user": Processes updates to an existing user (admin-only).
+# - "/delete_user": Deletes a user from the system (admin-only).
+# - "/changelog": Displays a changelog of all actions performed (admin-only).
+
+# Templates:
+# - :form_variant: A dynamic HTML template for rendering the main user interface with tabs and forms.
+# - :contact_page: A simple contact form template.
+
+# Helper Functions:
+# - initialize_lists(file): Extracts templates and functions from the script for editing.
+# - modify_file(file): Modifies the script file based on user input.
+# - liveUpdateUserDesign(): JavaScript function for live preview of user-designed webpages.
+# - log_change(editor, action, details): Logs changes to a JSON-based changelog.
+
+# Usage:
+# - Run the script and follow the prompts to select a role.
+# - Admins can manage users and view the changelog.
+# - Editors can dynamically edit templates and functions.
+# - Users can interact with the forms and submit data.
+
+# Note:
+# - Ensure required JSON files (e.g., users.json, changelog.json) exist in the working directory.
+# - The application runs on port 4567 and requires the WebFramework module.
 require 'cgi'
 require_relative 'web_dsl'
 include WebFramework
