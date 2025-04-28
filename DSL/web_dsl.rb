@@ -1,5 +1,4 @@
 # web_dsl.rb
-# web_dsl.rb
 #
 # This file defines a lightweight web framework module `WebFramework` that provides
 # a DSL (Domain-Specific Language) for building simple web applications in Ruby.
@@ -52,6 +51,7 @@
 # end
 # app.start(port: 8080)
 # ```
+
 require 'cgi'
 require 'webrick'
 require 'json'
