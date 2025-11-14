@@ -52,15 +52,38 @@ include WebFramework
 # Build the application and define routes.
 $app = WebFramework.app do
   route "/login" do |req, res, sess|
-    if req.method == "POST"
-      role = req.query["role"] || "user"
-      sess["role"] = role
+  if req.request_method == "GET"
+    <<~HTML
+      <h2>Login</h2>
+      <form method="POST" action="/login">
+        <label>Email:</label><br>
+        <input type="email" name="email" required><br><br>
+
+        <label>Password:</label><br>
+        <input type="password" name="password" required><br><br>
+
+        <button type="submit">Login</button>
+      </form>
+    HTML
+  elsif req.request_method == "POST"
+    email = req.query["email"]
+    pass  = req.query["password"]
+
+    users = load_users
+    user  = users.find { |u| u["email"] == email }
+
+    if user && user["password"] == pass
+      sess["role"] = user["role"]
+      sess["name"] = user["name"]
       res.redirect("/")
     else
-      res.status = 405
-      "Method Not Allowed"
+      "<h3>Invalid credentials. <a href=\"/login\">Try again</a></h3>"
     end
-  end  # closes the app block properly and returns the application
+  else
+    res.status = 405
+    "Method Not Allowed"
+  end
+end
 
 # Ask for user role.
 puts "Enter your role (admin/user/editor):"
