@@ -85,6 +85,20 @@ $app = WebFramework.app do
   end
 end
 
+# End current remote session
+route "/logout" do |req, res, sess|
+  # Completely clear the session hash
+  sess.clear
+
+  # Expire the session cookie
+  expired = WEBrick::Cookie.new('session_id', '')
+  expired.expires = Time.at(0)
+  res.cookies << expired
+
+  # Redirect back to login page
+  res.redirect("/login")
+end
+
 # Ask for user role.
 puts "Enter your role (admin/user/editor):"
 role = gets.chomp.strip.downcase
@@ -448,6 +462,7 @@ end
       <body onload="liveUpdateUserDesign()">
         <h2>Local Host Testing</h2>
         <div>
+          #(<button class="tab-btn" onclick="location.href=\'/logout\'">Logout</button>' if sess["role"]}
           <button class="tab-btn" onclick="switchTab('v1')">User Data</button>
           <button class="tab-btn" onclick="switchTab('v2')">Project Info</button>
           <button class="tab-btn" onclick="switchTab('v3')">Webpage Builder</button>
@@ -456,6 +471,9 @@ end
         </div>
 
         <form action="/submit" method="post" enctype="multipart/form-data">
+          <div style="float:right;">
+            #{'<button onclick="location.href=\'/logout\'">Logout</button>' if sess["role"]}
+          </div>
           <div id="v1" class="tab active">
             <h3>Template Variant 1</h3>
             <input type="text" name="name" placeholder="Full Name"><br><br>
