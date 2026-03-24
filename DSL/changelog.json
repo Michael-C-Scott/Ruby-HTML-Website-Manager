@@ -46,5 +46,35 @@
     },
     "by": "Editor",
     "timestamp": "2025-04-25 05:01:08"
+  },
+  {
+    "action": "All Sessions Closed",
+    "detail": "All active web sessions ended from editor console",
+    "by": "editor",
+    "timestamp": "2026-03-23 23:44:45"
+  },
+  {
+    "action": "Session Closed",
+    "detail": "Closed session bae6906e99ce014ebf094cc6831f0365",
+    "by": "admin",
+    "timestamp": "2026-03-23 23:47:43"
+  },
+  {
+    "action": "All Sessions Closed",
+    "detail": "Closed all active web sessions",
+    "by": "admin",
+    "timestamp": "2026-03-23 23:58:34"
+  },
+  {
+    "action": "Server Shutdown",
+    "detail": "Web page/server shutdown initiated by admin",
+    "by": "admin",
+    "timestamp": "2026-03-24 00:08:14"
+  },
+  {
+    "action": "Server Shutdown",
+    "detail": "Web page/server shutdown initiated by admin",
+    "by": "admin",
+    "timestamp": "2026-03-24 02:59:57"
   }
 ]

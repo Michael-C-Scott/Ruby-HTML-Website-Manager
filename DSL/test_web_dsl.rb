@@ -25,6 +25,10 @@
 # - "/update_user": Processes updates to an existing user (admin-only).
 # - "/delete_user": Deletes a user from the system (admin-only).
 # - "/changelog": Displays a changelog of all actions performed (admin-only).
+# - "/session_status": Displays active sessions with options to close individual sessions (admin-only).
+# - "/close_session": Closes a specific session by ID (admin-only).
+# - "/close_all_sessions": Ends all active web sessions and updates page status (admin-only).
+# - "/shutdown": Gracefully shuts down the entire web server/page (admin-only).
 
 # Templates:
 # - :form_variant: A dynamic HTML template for rendering the main user interface with tabs and forms.
@@ -38,7 +42,7 @@
 
 # Usage:
 # - Run the script and follow the prompts to select a role.
-# - Admins can manage users and view the changelog.
+# - Admins can manage sessions, users, and view the changelog.
 # - Editors can dynamically edit templates and functions.
 # - Users can interact with the forms and submit data.
 
@@ -103,8 +107,10 @@ initialize_lists(file)
     puts "5. Modify template/function"
     puts "6. List all users from users.json"
     puts "7. View JSON-based changelog"
-    puts "8. Restart Application"
-    puts "9. Exit Program"
+    puts "8. End All Web Sessions"
+    puts "9. Shutdown Web Server"
+    puts "10. Restart Application"
+    puts "11. Exit Program"
 
     print "Choose an option: "
     choice = gets.chomp.strip
@@ -246,9 +252,28 @@ initialize_lists(file)
         puts "changelog.json does not exist."
       end
     when "8"
+      puts "Ending all web sessions..."
+      close_all_sessions
+      log_change("editor", "All Sessions Closed", "All active web sessions ended from editor console")
+      puts "All active web sessions have been closed successfully."
+      puts "Session end page active status: COMPLETED"
+    when "9"
+      print "Are you sure you want to shutdown the web server? (yes/no): "
+      confirmation = gets.chomp.strip.downcase
+      if confirmation == "yes"
+        puts "Shutting down web server..."
+        log_change("editor", "Server Shutdown", "Web server shutdown initiated from editor console")
+        shutdown_server
+        puts "Server shutdown initiated. Exiting editor mode."
+        sleep(1)
+        exit
+      else
+        puts "Shutdown cancelled."
+      end
+    when "10"
       puts "Restarting the application..."
       exec("ruby", "test_web_dsl.rb")
-    when "9"
+    when "11"
       puts "Exiting editor mode."
       exit
     else
@@ -274,8 +299,36 @@ end
     data << submitted_data
     File.write("submitted_data.json", JSON.pretty_generate(data))
   
+    # Format the submitted data as HTML for email
+    email_body = <<~HTML
+      <h2>New Form Submission</h2>
+      <p><strong>Name:</strong> #{submitted_data[:name].html_escape}</p>
+      <p><strong>Email:</strong> #{submitted_data[:email].html_escape}</p>
+      <p><strong>About:</strong></p>
+      <p>#{submitted_data[:about].html_escape.gsub("\n", "<br>")}</p>
+      <p><strong>Project:</strong> #{submitted_data[:project].html_escape}</p>
+      <p><strong>Description:</strong></p>
+      <p>#{submitted_data[:description].html_escape.gsub("\n", "<br>")}</p>
+      <p><strong>Priority:</strong> #{submitted_data[:priority].html_escape}</p>
+      <p><strong>Page Title:</strong> #{submitted_data[:page_title].html_escape}</p>
+      <p><strong>Background Color:</strong> #{submitted_data[:background_color].html_escape}</p>
+      <p><strong>Include Email:</strong> #{submitted_data[:include_email] ? 'Yes' : 'No'}</p>
+      <p><strong>Include Image:</strong> #{submitted_data[:include_image] ? 'Yes' : 'No'}</p>
+      <p><strong>Layout Style:</strong> #{submitted_data[:layout_style].html_escape}</p>
+      <p><strong>Submitted At:</strong> #{submitted_data[:submitted_at].html_escape}</p>
+    HTML
+    
+    # Send email with submitted data
+    email_result = send_email("pgwmichaelscott@gmail.com", email_body, "New Form Submission from #{submitted_data[:name]}")
+    
+    if email_result[:success]
+      email_status = "<p style='color: green;'><strong>✓ Email sent successfully!</strong></p>"
+    else
+      email_status = "<p style='color: orange;'><strong>⚠ Submission saved, but email issue: #{email_result[:message].html_escape}</strong></p>"
+    end
+  
     res.status = 200
-    "<p>Thank you, #{submitted_data[:name]}! Your submission has been saved.</p>"
+    "<p>Thank you, #{submitted_data[:name]}! Your submission has been saved.</p>#{email_status}"
   end
 
   route "/save_data" do |req, res, sess|
@@ -296,6 +349,9 @@ end
       <html>
       <head>
         <meta charset="UTF-8">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
         <title>Ruby-HTML DSL</title>
         <style>
           .tab { display: none; }
@@ -429,7 +485,7 @@ end
           <button class="tab-btn" onclick="switchTab('v2')">Project Info</button>
           <button class="tab-btn" onclick="switchTab('v3')">Webpage Builder</button>
           <button class="tab-btn" onclick="switchTab('v4')">User Webpage</button>
-          #{'<button class="tab-btn" onclick="switchTab(\'v5\')">View Users</button>' if role == 'admin'}
+          #{'<button class="tab-btn" onclick="switchTab(\'v5\')">Admin Controls</button>' if role == 'admin'}
         </div>
 
         <form action="/submit" method="post" enctype="multipart/form-data">
@@ -445,6 +501,15 @@ end
               <p>Loading users...</p>
             </div>
             <button type="button" onclick="location.href='/add_user'">Add User</button>
+            <hr>
+            <h3>Session Management</h3>
+            <p><strong>End web sessions:</strong></p>
+            <button type="button" onclick="location.href='/session_status'">View/Close Sessions</button>
+            <button type="button" onclick="if(confirm('Close all active sessions?')) location.href='/close_all_sessions'">End All Sessions</button>
+            <hr>
+            <h3>Web Page Control</h3>
+            <p><strong>Close the entire web page:</strong></p>
+            <button type="button" onclick="if(confirm('Shutdown the entire web server? This will close the page.')) location.href='/shutdown'" style="background-color: #ff6b6b; color: white; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">🔴 Shutdown Web Server</button>
           </div>
           <div id="v2" class="tab">
             <h3>Template Variant 2</h3>
@@ -570,6 +635,176 @@ end
     else
       "<h3>User not found!</h3><a href='/'>Go Back</a>"
     end
+  end
+
+  route "/close_session" do |req, res, sess|
+    if sess["role"] != "admin"
+      res.status = 403
+      next "Unauthorized"
+    end
+    
+    session_id = req.query["session_id"]
+    if session_id
+      if close_session(session_id)
+        log_change(sess["role"], "Session Closed", "Closed session #{session_id}")
+        "<h3>Session closed successfully!</h3><a href='/'>Go Back</a>"
+      else
+        "<h3>Session not found!</h3><a href='/'>Go Back</a>"
+      end
+    else
+      "<h3>No session ID provided!</h3><a href='/'>Go Back</a>"
+    end
+  end
+
+  route "/close_all_sessions" do |req, res, sess|
+    if sess["role"] != "admin"
+      res.status = 403
+      next "Unauthorized"
+    end
+    
+    close_all_sessions
+    log_change(sess["role"], "All Sessions Closed", "Closed all active web sessions")
+    "<h3>All sessions closed successfully!</h3><em>Session end page active status updated.</em><br><a href='/'>Go Back</a>"
+  end
+
+  route "/session_status" do |req, res, sess|
+    if sess["role"] != "admin"
+      res.status = 403
+      next "Unauthorized"
+    end
+    
+    active_sessions = get_active_sessions
+    status_html = "<h3>Active Web Sessions: #{active_sessions.count}</h3>"
+    
+    if active_sessions.empty?
+      status_html += "<p><em>No active sessions currently.</em></p>"
+    else
+      status_html += "<ul>"
+      active_sessions.each do |session_id, info|
+        created = info[:created_at].strftime("%Y-%m-%d %H:%M:%S")
+        status_html += "<li>#{session_id[0..7]}... (Created: #{created}) <a href='/close_session?session_id=#{session_id}'>Close</a></li>"
+      end
+      status_html += "</ul>"
+    end
+    
+    status_html += "<button onclick=\"location.href='/close_all_sessions'\">End All Sessions</button><br><br><a href='/'>Go Back</a>"
+    status_html
+  end
+
+  route "/shutdown" do |req, res, sess|
+    if sess["role"] != "admin"
+      res.status = 403
+      next "Unauthorized"
+    end
+    
+    log_change(sess["role"], "Server Shutdown", "Web page/server shutdown initiated by admin")
+    
+    # Schedule shutdown to happen after response is sent
+    Thread.new { sleep(0.5); shutdown_server }
+    
+    # Redirect to server closed page
+    res.status = 302
+    res['Location'] = '/server_closed'
+    res['Custom-Header'] = 'Redirect-to-closed'
+    ""
+  end
+
+  route "/server_closed" do |req, res, sess|
+    server_closed_html = <<~HTML
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
+        <title>Server Closed</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+          .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+          }
+          h1 {
+            color: #ff6b6b;
+            margin-top: 0;
+          }
+          .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+          }
+          p {
+            color: #555;
+            line-height: 1.6;
+            margin: 20px 0;
+          }
+          .note {
+            background: #f0f0f0;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 5px;
+          }
+          button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+          }
+          button:hover {
+            background: #764ba2;
+          }
+        </style>
+        <script>
+          // Prevent caching
+          if (window.history && window.history.pushState) {
+            window.history.pushState(null, null, window.location.href);
+            window.onpopstate = function() {
+              window.history.pushState(null, null, window.location.href);
+            };
+          }
+          // Refresh every 5 seconds to check if server is back online
+          setTimeout(function() {
+            location.reload();
+          }, 5000);
+        </script>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon">🔴</div>
+          <h1>Server Closed</h1>
+          <p>The web server has been shut down.</p>
+          <div class="note">
+            <strong>ℹ️ Note:</strong><br>
+            The back button will not work to return to previous pages. The server is offline.
+          </div>
+          <p style="font-size: 14px; color: #999;">
+            This page will automatically refresh every 5 seconds to check if the server comes back online.
+          </p>
+          <button onclick="location.reload()">Check Again Now</button>
+        </div>
+      </body>
+      </html>
+    HTML
+    
+    server_closed_html
   end
   route "/add_user" do |req, res, sess|
     if sess["role"] != "admin"

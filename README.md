@@ -20,11 +20,11 @@ The securerandom library is used to generate cryptographically secure random val
 Running the Program:
 Typing ruby test_web_dsl.rb in the console with ruby and dependencies present will load the web page and allow for user input. 
 
-Admin: Loads the full webpage with edit DSL and view user panels.
+Admin: Loads the full webpage with edit DSL and view user panels, sessions, and end session(s) or entire page.
 
 User: Loads the webpage without admin features.
 
-Editor: Stays in the console to modify test_web_dsl.rb.
+Editor: Stays in the console to modify test_web_dsl.rb, end sessions and close the web page.
 
 
 DSL Functions

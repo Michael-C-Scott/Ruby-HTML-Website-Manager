@@ -22,7 +22,7 @@
 #   (`session_store`) to store session data.
 # - **File Uploads**: Supports file uploads via a `/upload` route.
 # - **Email Sending**: Configures email sending using the `mail` gem and provides
-#   methods to send emails with HTML content.
+#   methods to send emails with HTML content. Run `gem install mail` if you launch with an error.
 # - **User and Changelog Management**: Includes helper methods for loading, saving,
 #   and managing user data and changelogs in JSON files.
 #
