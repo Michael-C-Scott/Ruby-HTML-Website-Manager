@@ -19,7 +19,7 @@
 #   (`session_store`) to store session data.
 # - **File Uploads**: Supports file uploads via a `/upload` route.
 # - **Email Sending**: Configures email sending using the `mail` gem and provides
-#   methods to send emails with HTML content.
+#   methods to send emails with HTML content. Run `gem install mail` if you launch with an error.
 # - **User and Changelog Management**: Includes helper methods for loading, saving,
 #   and managing user data and changelogs in JSON files.
 #
@@ -27,6 +27,12 @@
 # - `normalize_submission_data(req)`: Normalizes and extracts form submission data
 #   from an HTTP request.
 # - `session(req, res)`: Retrieves or creates a session for the given request and response.
+#   Tracks active sessions with creation time and status.
+# - `close_session(session_id)`: Closes a specific session and marks it as closed.
+# - `get_active_sessions`: Returns a hash of all currently active sessions.
+# - `get_session_info(session_id)`: Retrieves details for a specific session.
+# - `close_all_sessions`: Closes all active sessions and updates their status.
+# - `shutdown_server`: Gracefully shuts down the WEBrick HTTP server (calls shutdown in a thread).
 # - `load_users` / `save_users(users, file)`: Load and save user data from/to a JSON file.
 # - `load_user_data` / `save_user_data`: Load and save additional user data from/to a JSON file.
 # - `setup_mail`: Configures the email delivery method using SMTP.
@@ -67,7 +73,7 @@ end
 
 module WebFramework
   class App
-    attr_accessor :routes, :templates, :layout, :session_store
+    attr_accessor :routes, :templates, :layout, :session_store, :active_sessions, :server
     def start(port: 4567)
       WebFramework.start(port: port)
     end
@@ -76,6 +82,8 @@ module WebFramework
       @templates = {}
       @layout = nil
       @session_store = {}  # Simple session storage hash keyed by session_id.
+      @active_sessions = {}  # Tracks active session details (creation time, role, status)
+      @server = nil  # Will hold reference to WEBrick server for shutdown
       @user_data = load_user_data
       setup_mail
     end
@@ -104,7 +112,56 @@ module WebFramework
       cookie = req.cookies.find { |c| c.name == 'session_id' }
       session_id = cookie ? cookie.value : SecureRandom.hex(16)
       res.cookies << WEBrick::Cookie.new('session_id', session_id) unless cookie
+      
+      # Track active sessions on first creation
+      unless @session_store[session_id]
+        @active_sessions[session_id] = {
+          created_at: Time.now,
+          status: 'active'
+        }
+      end
+      
       @session_store[session_id] ||= {}
+    end
+
+    # Close a session
+    def close_session(session_id)
+      if @session_store[session_id]
+        @session_store.delete(session_id)
+        @active_sessions[session_id]&.update(status: 'closed', closed_at: Time.now)
+        return true
+      end
+      false
+    end
+
+    # Get all active sessions
+    def get_active_sessions
+      @active_sessions.select { |_, info| info[:status] == 'active' }
+    end
+
+    # Get session details
+    def get_session_info(session_id)
+      @active_sessions[session_id]
+    end
+
+    # Close all sessions
+    def close_all_sessions
+      @session_store.clear
+      @active_sessions.each do |id, info|
+        if info[:status] == 'active'
+          @active_sessions[id][:status] = 'closed'
+          @active_sessions[id][:closed_at] = Time.now
+        end
+      end
+    end
+
+    # Shutdown the web server gracefully
+    def shutdown_server
+      if @server
+        Thread.new { @server.shutdown }
+        return true
+      end
+      false
     end
 
     def load_users
@@ -132,25 +189,35 @@ module WebFramework
         delivery_method :smtp, {
           address: "smtp.gmail.com",
           port: 587,
-          user_name: 'your_email@gmail.com',
-          password: 'your_password',
+          #set to your Gmail or other email address and app password
+          #potentially set to read from a local file for security
+          user_name: 'placeholder@gmail.com',
+          # has to be app password not email password
+          password: 'rzmh ojtg wkvx imin',
           authentication: 'plain',
           enable_starttls_auto: true
         }
       end
     end
 
-    def send_email(to_email, html_body)
-      mail = Mail.new do
-        from    'your_email@gmail.com'
-        to      to_email
-        subject 'Your Customized Web Page'
-        html_part do
-          content_type 'text/html; charset=UTF-8'
-          body html_body
+    def send_email(to_email, html_body, subject = 'Your Customized Web Page')
+      begin
+        mail = Mail.new do
+          from    'your_email@gmail.com'
+          to      to_email
+          subject subject
+          html_part do
+            content_type 'text/html; charset=UTF-8'
+            body html_body
+          end
         end
+        mail.deliver!
+        return { success: true, message: "Email sent successfully" }
+      rescue => e
+        error_msg = "Email Error: #{e.class} - #{e.message}"
+        puts error_msg
+        return { success: false, message: error_msg }
       end
-      mail.deliver!
     end
 
     def route(path, &block)
@@ -201,10 +268,10 @@ module WebFramework
     end
 
     def start(port: 4567)
-      server = WEBrick::HTTPServer.new(Port: port)
+      @server = WEBrick::HTTPServer.new(Port: port)
 
       # Route for file uploads.
-      server.mount_proc('/upload') do |req, res|
+      @server.mount_proc('/upload') do |req, res|
         if req.request_method == 'POST'
           uploaded = req.query['image']
           if uploaded && uploaded.respond_to?(:filename)
@@ -218,20 +285,27 @@ module WebFramework
           res.body = "Upload an image."
         end
         res['Content-Type'] = 'text/html'
+        res['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        res['Pragma'] = 'no-cache'
+        res['Expires'] = '0'
       end
 
       # Mount each defined route.
       @routes.each do |path, block|
-        server.mount_proc path do |req, res|
+        @server.mount_proc path do |req, res|
           # Retrieve (or create) the session for the request.
           sess = session(req, res)
           res.body = instance_exec(req, res, sess, &block)
           res['Content-Type'] = 'text/html'
+          # Prevent caching for all responses
+          res['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+          res['Pragma'] = 'no-cache'
+          res['Expires'] = '0'
         end
       end
 
-      trap("INT") { server.shutdown }
-      server.start
+      trap("INT") { @server.shutdown }
+      @server.start
     end
   end
 
