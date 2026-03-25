@@ -344,6 +344,565 @@ end
     "<h3>Data saved successfully!</h3><a href='/'>Go Back</a>"
   end
 
+  # Welcome/Login Page Template
+  define_template :welcome_login do
+    <<~HTML
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
+        <title>Welcome - Ruby-HTML DSL</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            max-width: 500px;
+            width: 100%;
+            padding: 50px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+          }
+          .header {
+            margin-bottom: 40px;
+          }
+          .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+          }
+          .header p {
+            color: #666;
+            font-size: 16px;
+          }
+          .welcome-message {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            color: #555;
+            line-height: 1.6;
+          }
+          .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+          }
+          .btn {
+            padding: 14px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            width: 100%;
+          }
+          .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+          }
+          .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          }
+          .btn-register {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+          }
+          .btn-register:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+          }
+          .divider {
+            margin: 30px 0;
+            color: #ccc;
+            font-size: 14px;
+          }
+          .footer {
+            font-size: 12px;
+            color: #999;
+            margin-top: 30px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎮 Welcome</h1>
+            <p>Ruby-HTML DSL Platform</p>
+          </div>
+          
+          <div class="welcome-message">
+            <p>Welcome to the Ruby-HTML Website Manager! Please select an option to get started.</p>
+          </div>
+          
+          <div class="button-group">
+            <a href="/login" class="btn btn-login">Existing User - Login</a>
+            <div class="divider">or</div>
+            <a href="/register" class="btn btn-register">New User - Register</a>
+          </div>
+          
+          <div class="footer">
+            <p>Secure and easy authentication for all users.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    HTML
+  end
+
+  # Login Page Template
+  define_template :login_page do
+    <<~HTML
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
+        <title>Login - Ruby-HTML DSL</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            max-width: 450px;
+            width: 100%;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+          }
+          .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+          }
+          .header p {
+            color: #666;
+            font-size: 14px;
+          }
+          .form-group {
+            margin-bottom: 20px;
+          }
+          label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+          }
+          input[type="email"],
+          input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+          }
+          input[type="email"]:focus,
+          input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+          }
+          .error-message {
+            display: none;
+            padding: 12px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            color: #856404;
+            margin-bottom: 20px;
+            font-size: 14px;
+          }
+          .error-message.show {
+            display: block;
+          }
+          .success-message {
+            display: none;
+            padding: 12px;
+            background: #d4edda;
+            border: 1px solid #28a745;
+            border-radius: 6px;
+            color: #155724;
+            margin-bottom: 20px;
+            font-size: 14px;
+          }
+          .success-message.show {
+            display: block;
+          }
+          button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+          }
+          button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          }
+          button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 14px;
+          }
+          .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+          }
+          .footer a:hover {
+            text-decoration: underline;
+          }
+          .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+          }
+          .back-link:hover {
+            text-decoration: underline;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <a href="/" class="back-link">← Back</a>
+          
+          <div class="header">
+            <h1>Login</h1>
+            <p>Welcome back! Please log in to continue.</p>
+          </div>
+          
+          <div id="errorMessage" class="error-message"></div>
+          <div id="successMessage" class="success-message"></div>
+          
+          <form id="loginForm" method="POST" action="/authenticate_user">
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                placeholder="Enter your email" 
+                required
+                autocomplete="email"
+              >
+            </div>
+            
+            <button type="submit">Login</button>
+          </form>
+          
+          <div class="footer">
+            Don't have an account? <a href="/register">Create one here</a>
+          </div>
+        </div>
+        
+        <script>
+          const form = document.getElementById('loginForm');
+          const errorMessage = document.getElementById('errorMessage');
+          const successMessage = document.getElementById('successMessage');
+          
+          form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+            
+            const emailInput = document.getElementById('email');
+            const email = emailInput.value.trim();
+            
+            if (!email) {
+              errorMessage.textContent = 'Please enter your email address.';
+              errorMessage.classList.add('show');
+              return;
+            }
+            
+            // Submit the form
+            form.submit();
+          });
+        </script>
+      </body>
+      </html>
+    HTML
+  end
+
+  # Registration Page Template
+  define_template :register_page do
+    <<~HTML
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
+        <title>Register - Ruby-HTML DSL</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            max-width: 450px;
+            width: 100%;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+          }
+          .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+          }
+          .header p {
+            color: #666;
+            font-size: 14px;
+          }
+          .form-group {
+            margin-bottom: 20px;
+          }
+          label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+          }
+          input[type="text"],
+          input[type="email"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+          }
+          input[type="text"]:focus,
+          input[type="email"]:focus {
+            outline: none;
+            border-color: #667eea;
+          }
+          .error-message {
+            display: none;
+            padding: 12px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            color: #856404;
+            margin-bottom: 20px;
+            font-size: 14px;
+          }
+          .error-message.show {
+            display: block;
+          }
+          button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+          }
+          button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          }
+          button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 14px;
+          }
+          .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+          }
+          .footer a:hover {
+            text-decoration: underline;
+          }
+          .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+          }
+          .back-link:hover {
+            text-decoration: underline;
+          }
+          .info-text {
+            background: #e7f3ff;
+            padding: 12px;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #004085;
+            margin-bottom: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <a href="/" class="back-link">← Back</a>
+          
+          <div class="header">
+            <h1>Create Account</h1>
+            <p>Welcome! Please create a new account.</p>
+          </div>
+          
+          <div class="info-text">
+            <strong>ℹ️ Note:</strong> Your account will be created with a standard "user" role. Contact an administrator for elevated privileges.
+          </div>
+          
+          <div id="errorMessage" class="error-message"></div>
+          
+          <form id="registerForm" method="POST" action="/register_user">
+            <div class="form-group">
+              <label for="name">Full Name</label>
+              <input 
+                type="text" 
+                id="name" 
+                name="name" 
+                placeholder="Enter your full name" 
+                required
+                autocomplete="name"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                placeholder="Enter your email" 
+                required
+                autocomplete="email"
+              >
+            </div>
+            
+            <button type="submit">Create Account</button>
+          </form>
+          
+          <div class="footer">
+            Already have an account? <a href="/login">Login here</a>
+          </div>
+        </div>
+        
+        <script>
+          const form = document.getElementById('registerForm');
+          const errorMessage = document.getElementById('errorMessage');
+          
+          form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            errorMessage.classList.remove('show');
+            
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+            const name = nameInput.value.trim();
+            const email = emailInput.value.trim();
+            
+            if (!name) {
+              errorMessage.textContent = 'Please enter your full name.';
+              errorMessage.classList.add('show');
+              return;
+            }
+            
+            if (!email) {
+              errorMessage.textContent = 'Please enter your email address.';
+              errorMessage.classList.add('show');
+              return;
+            }
+            
+            // Submit the form
+            form.submit();
+          });
+        </script>
+      </body>
+      </html>
+    HTML
+  end
+
   define_template :form_variant do
     <<~HTML
       <html>
@@ -479,13 +1038,21 @@ end
         </script>
       </head>
       <body onload="liveUpdateUserDesign()">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; color: white; display: flex; justify-content: space-between; align-items: center; border-radius: 5px; margin-bottom: 20px;">
+          <div>
+            <h2 style="margin: 0; font-size: 24px;">Ruby-HTML DSL Platform</h2>
+            <p style="margin: 5px 0 0 0; font-size: 14px;">Logged in as: <strong><%= @user_name || "User" %></strong> (<%= @user_email %>) - Role: <strong><%= @user_role %></strong></p>
+          </div>
+          <a href="/logout" style="background: white; color: #667eea; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; cursor: pointer;">Logout</a>
+        </div>
+        
         <h2>Local Host Testing</h2>
         <div>
           <button class="tab-btn" onclick="switchTab('v1')">User Data</button>
           <button class="tab-btn" onclick="switchTab('v2')">Project Info</button>
           <button class="tab-btn" onclick="switchTab('v3')">Webpage Builder</button>
           <button class="tab-btn" onclick="switchTab('v4')">User Webpage</button>
-          #{'<button class="tab-btn" onclick="switchTab(\'v5\')">Admin Controls</button>' if role == 'admin'}
+          #{'<button class="tab-btn" onclick="switchTab(\'v5\')">Admin Controls</button>' if @user_role == 'admin'}
         </div>
 
         <form action="/submit" method="post" enctype="multipart/form-data">
@@ -544,7 +1111,7 @@ end
           <br><br>
           <button type="submit">Submit</button>
           <button type="button" onclick="saveScreenshot()">Save Screenshot</button>
-          #{'<button type="button" onclick="openEditor()">Edit DSL</button>' if role == 'admin'}
+          #{'<button type="button" onclick="openEditor()">Edit DSL</button>' if @user_role == 'admin'}
         </form>
         <script>
           document.addEventListener("DOMContentLoaded", () => {
@@ -598,11 +1165,400 @@ end
     HTML
   end
 
-  # Home route.
+  # Welcome/Login Flow Routes
+  
+  # Welcome page - first landing page
+  route "/welcome" do |req, res, sess|
+    render(:welcome_login)
+  end
+  
+  # Login page
+  route "/login" do |req, res, sess|
+    render(:login_page)
+  end
+  
+  # Register page
+  route "/register" do |req, res, sess|
+    render(:register_page)
+  end
+  
+  # Authenticate user - handles login
+  route "/authenticate_user" do |req, res, sess|
+    email = req.query["email"].to_s.strip.downcase
+    
+    if email.empty?
+      res.status = 400
+      next "Email is required."
+    end
+    
+    users = load_users
+    user = users.find { |u| u["email"].to_s.downcase == email }
+    
+    if user
+      # User exists - set session and redirect to main app
+      sess["authenticated"] = true
+      sess["user_email"] = email
+      sess["user_name"] = user["name"]
+      sess["user_role"] = user["role"] || "user"
+      sess["role"] = user["role"] || "user"
+      
+      log_change(user["name"], "Login", "User #{user['name']} (#{email}) logged in")
+      
+      "<script>
+        setTimeout(function() {
+          window.location.href = '/';
+        }, 500);
+      </script>
+      <p>Login successful! Redirecting...</p>"
+    else
+      # User not found - show error with option to register
+      error_html = <<~HTML
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>User Not Found</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+              padding: 20px;
+            }
+            .container {
+              background: white;
+              max-width: 450px;
+              width: 100%;
+              padding: 40px;
+              border-radius: 12px;
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+              text-align: center;
+            }
+            .error-box {
+              background: #fff3cd;
+              border: 2px solid #ffc107;
+              color: #856404;
+              padding: 20px;
+              border-radius: 8px;
+              margin-bottom: 25px;
+            }
+            h2 {
+              color: #333;
+              margin-bottom: 10px;
+            }
+            p {
+              color: #555;
+              margin-bottom: 20px;
+            }
+            .button-group {
+              display: flex;
+              gap: 10px;
+              flex-direction: column;
+            }
+            a, button {
+              padding: 12px;
+              font-size: 16px;
+              font-weight: 600;
+              border: none;
+              border-radius: 8px;
+              cursor: pointer;
+              text-decoration: none;
+              display: block;
+              transition: all 0.3s;
+            }
+            .btn-register {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+            }
+            .btn-register:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+            .btn-back {
+              background: white;
+              color: #667eea;
+              border: 2px solid #667eea;
+            }
+            .btn-back:hover {
+              background: #f8f9fa;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="error-box">
+              <h2>User Not Found</h2>
+              <p>The email <strong>#{CGI.escapeHTML(email)}</strong> is not registered in our system.</p>
+              <p>Would you like to create a new account?</p>
+            </div>
+            
+            <div class="button-group">
+              <a href="/register" class="btn-register">Create New Account</a>
+              <a href="/login" class="btn-back">Try Another Email</a>
+            </div>
+          </div>
+        </body>
+        </html>
+      HTML
+      next error_html
+    end
+  end
+  
+  # Register new user
+  route "/register_user" do |req, res, sess|
+    name = req.query["name"].to_s.strip
+    email = req.query["email"].to_s.strip.downcase
+    
+    # Validation
+    if name.empty? || email.empty?
+      res.status = 400
+      next "Name and email are required."
+    end
+    
+    users = load_users
+    
+    # Check if email already exists
+    if users.any? { |u| u["email"].to_s.downcase == email }
+      error_html = <<~HTML
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Email Already Registered</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+              padding: 20px;
+            }
+            .container {
+              background: white;
+              max-width: 450px;
+              width: 100%;
+              padding: 40px;
+              border-radius: 12px;
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+              text-align: center;
+            }
+            .error-box {
+              background: #f8d7da;
+              border: 2px solid #f5c6cb;
+              color: #721c24;
+              padding: 20px;
+              border-radius: 8px;
+              margin-bottom: 25px;
+            }
+            h2 {
+              color: #333;
+              margin-bottom: 10px;
+            }
+            p {
+              color: #555;
+              margin-bottom: 20px;
+            }
+            .button-group {
+              display: flex;
+              gap: 10px;
+              flex-direction: column;
+            }
+            a {
+              padding: 12px;
+              font-size: 16px;
+              font-weight: 600;
+              border: none;
+              border-radius: 8px;
+              cursor: pointer;
+              text-decoration: none;
+              display: block;
+              transition: all 0.3s;
+            }
+            .btn-login {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+            }
+            .btn-login:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+            .btn-back {
+              background: white;
+              color: #667eea;
+              border: 2px solid #667eea;
+            }
+            .btn-back:hover {
+              background: #f8f9fa;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="error-box">
+              <h2>Email Already Registered</h2>
+              <p>The email <strong>#{CGI.escapeHTML(email)}</strong> is already associated with an account.</p>
+              <p>Please log in or use a different email address.</p>
+            </div>
+            
+            <div class="button-group">
+              <a href="/login" class="btn-login">Go to Login</a>
+              <a href="/register" class="btn-back">Try Different Email</a>
+            </div>
+          </div>
+        </body>
+        </html>
+      HTML
+      next error_html
+    end
+    
+    # Create new user
+    new_user = {
+      "name" => name,
+      "email" => email,
+      "role" => "user",
+      "submitted_at" => Time.now.utc.iso8601
+    }
+    
+    users << new_user
+    save_users(users)
+    
+    # Authenticate the new user
+    sess["authenticated"] = true
+    sess["user_email"] = email
+    sess["user_name"] = name
+    sess["user_role"] = "user"
+    sess["role"] = "user"
+    
+    log_change(name, "Registration", "New user #{name} (#{email}) registered")
+    
+    success_html = <<~HTML
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Account Created</title>
+        <style>
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            max-width: 450px;
+            width: 100%;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+          }
+          .success-box {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+          }
+          h2 {
+            color: #333;
+            margin-bottom: 10px;
+          }
+          p {
+            color: #555;
+            margin-bottom: 20px;
+          }
+          .icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+          }
+          a {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+            transition: all 0.3s;
+          }
+          a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          }
+        </style>
+        <script>
+          setTimeout(function() {
+            window.location.href = '/';
+          }, 3000);
+        </script>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon">✅</div>
+          <div class="success-box">
+            <h2>Account Created Successfully!</h2>
+            <p>Welcome <strong>#{CGI.escapeHTML(name)}</strong>!</p>
+            <p>Your account has been created with email <strong>#{CGI.escapeHTML(email)}</strong>.</p>
+          </div>
+          
+          <p>Redirecting to the application in 3 seconds...</p>
+          <a href="/">Continue Now</a>
+        </div>
+      </body>
+      </html>
+    HTML
+    next success_html
+  end
+  
+  # Logout route
+  route "/logout" do |req, res, sess|
+    if sess["user_name"]
+      log_change(sess["user_name"], "Logout", "User #{sess["user_name"]} logged out")
+    end
+    
+    # Clear authenticated session
+    sess["authenticated"] = false
+    sess["user_email"] = nil
+    sess["user_name"] = nil
+    sess["user_role"] = nil
+    sess["role"] = nil
+    
+    res.status = 302
+    res['Location'] = '/welcome'
+    ""
+  end
+
+  # Home route - check if authenticated
   route "/" do |req, res, sess|
-    # Set session role if not already defined.
-    sess["role"] ||= role
-    render(:form_variant)
+    # Check if user is authenticated
+    unless sess["authenticated"]
+      res.status = 302
+      res['Location'] = '/welcome'
+      next ""
+    end
+    
+    # Set session role if not already defined
+    sess["role"] ||= sess["user_role"] || "user"
+    
+    # Pass user info to template
+    render(:form_variant, 
+      user_name: sess["user_name"] || "User",
+      user_email: sess["user_email"] || "",
+      user_role: sess["user_role"] || "user"
+    )
   end
 
   route "/user_display.json" do |req, res, sess|
@@ -998,8 +1954,14 @@ end
   end
 end
 
-# Start the server only if the role is admin or user.
-if $current_role == "admin" || $current_role == "user"
+# Start the server if the role is not editor
+# (Editor mode runs in the console/terminal above)
+if $current_role != "editor"
+  puts "\n🚀 Starting Ruby-HTML DSL Web Server..."
+  puts "📍 Access the application at: http://localhost:4567"
+  puts "🔐 You will be prompted to log in or create an account."
+  puts "📊 Available roles: admin, user, editor"
+  puts "\n"
   $app.start(port: 4567)
 end
 

@@ -76,5 +76,53 @@
     "detail": "Web page/server shutdown initiated by admin",
     "by": "admin",
     "timestamp": "2026-03-24 02:59:57"
+  },
+  {
+    "action": "Login",
+    "detail": "User Michael (mike@example.com) logged in",
+    "by": "Michael",
+    "timestamp": "2026-03-25 03:23:20"
+  },
+  {
+    "action": "Logout",
+    "detail": "User Michael logged out",
+    "by": "Michael",
+    "timestamp": "2026-03-25 03:23:41"
+  },
+  {
+    "action": "Login",
+    "detail": "User Bob (bob@example.com) logged in",
+    "by": "Bob",
+    "timestamp": "2026-03-25 03:23:59"
+  },
+  {
+    "action": "Logout",
+    "detail": "User Bob logged out",
+    "by": "Bob",
+    "timestamp": "2026-03-25 03:24:12"
+  },
+  {
+    "action": "Registration",
+    "detail": "New user billy bob (billy@example.com) registered",
+    "by": "billy bob",
+    "timestamp": "2026-03-25 03:24:54"
+  },
+  {
+    "action": "Logout",
+    "detail": "User billy bob logged out",
+    "by": "billy bob",
+    "timestamp": "2026-03-25 03:25:05"
+  },
+  {
+    "action": "Login",
+    "detail": "User Michael (mike@example.com) logged in",
+    "by": "Michael",
+    "timestamp": "2026-03-25 03:25:18"
+  },
+  {
+    "action": "Server Shutdown",
+    "detail": "Web page/server shutdown initiated by admin",
+    "by": "admin",
+    "timestamp": "2026-03-25 03:25:31"
   }
 ]
